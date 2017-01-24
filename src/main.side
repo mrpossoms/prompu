@@ -1,0 +1,16 @@
+main.c
+-I ../../../../../Documents/SimpleIDE/Learn/Simple Libraries/Protocol/libsimplei2c
+-L ../../../../../Documents/SimpleIDE/Learn/Simple Libraries/Protocol/libsimplei2c
+drv_LSM9DS0.c
+i2c_util.c
+i2c_util.h
+drv_LSM9DS0.h
+>compiler=C
+>memtype=cmm main ram compact
+>optimize=-Os
+>-m32bit-doubles
+>-fno-exceptions
+>defs::-std=c99
+>-lm
+>linker::-lsimplei2c
+>BOARD::ACTIVITYBOARD
