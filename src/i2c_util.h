@@ -1,3 +1,6 @@
+#ifndef _I2C_UTIL
+#define _I2C_UTIL
+
 #include "simplei2c.h"
 
 #define I2C_RD 1
@@ -17,3 +20,4 @@ void i2c_write_reg_byte(i2c* bus,
                         uint8_t dev_addr,
                         uint8_t reg,
                         uint8_t byte);
+#endif

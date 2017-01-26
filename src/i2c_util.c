@@ -26,8 +26,6 @@ void i2c_read_reg_range(i2c* bus,
                         int bytes,
                         uint8_t* buf)
 {
-  uint8_t byte = 0;
-
   START
   // config for auto-incremented addressing
   _i2c_init_read(bus, dev_addr, reg | 0x80);
@@ -39,8 +37,6 @@ void i2c_read_reg_range(i2c* bus,
   }    
   
   STOP
-  
-  return byte;
 }
 
 void i2c_write_reg_byte(i2c* bus,
