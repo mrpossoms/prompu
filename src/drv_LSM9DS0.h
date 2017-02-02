@@ -2,7 +2,6 @@
 #define __DRV_LSM9DS0
 
 #include "i2c_util.h"
-#include "simplei2c.h"
 
 //      _      _    _            __       ___
 //     /_\  __| |__| |_ _ ___   / _|___  | _ \___ __ _ ___
@@ -100,6 +99,12 @@ typedef union {
   uint8_t buf[sizeof(int16_t) * 3];
 } vec3_16i_t;
 
+typedef union {
+  struct {
+    int8_t x, y, z;
+  };
+  uint8_t buf[sizeof(int8_t) * 3];
+} vec3_8i_t;
 
 int drv_LSM_init(i2c* bus);
 

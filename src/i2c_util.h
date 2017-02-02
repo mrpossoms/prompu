@@ -1,7 +1,17 @@
 #ifndef _I2C_UTIL
 #define _I2C_UTIL
 
+// #include <propeller.h>
 #include "simplei2c.h"
+
+// typedef struct i2c_st
+// {
+//   volatile int scl_mask;
+//   volatile int scl_mask_inv;
+//   int sda_mask;
+//   int sda_mask_inv;
+//   int drivescl;  /* flag to force scl if non-zero */
+// } i2c;
 
 #define I2C_RD 1
 #define I2C_WR 0
