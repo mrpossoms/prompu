@@ -16,7 +16,6 @@ float Q[4] = { 1, 0, 0, 0 };
 static float b_x = 1, b_z = 0;             // reference direction of flux in earth frame
 static float w_bx = 0, w_by = 0, w_bz = 0; // estimate gyroscope biases error
 
-
 void MARG_tick(float w_x, float w_y, float w_z,
                float a_x, float a_y, float a_z,
                float m_x, float m_y, float m_z)

@@ -5,11 +5,15 @@ drv_LSM9DS0.c
 i2c_util.c
 i2c_util.h
 drv_LSM9DS0.h
+MARG.c
+MARG.h
 >compiler=C
->memtype=cmm main ram compact
+>memtype=xmm-single external ram
 >optimize=-Os
 >-m32bit-doubles
 >-fno-exceptions
+>-Dprintf=__simple_printf
+>-enable_pruning
 >defs::-std=c99
 >-lm
 >linker::-lsimplei2c
