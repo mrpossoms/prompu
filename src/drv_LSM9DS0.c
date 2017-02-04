@@ -32,9 +32,11 @@ int drv_LSM_init()
 		.x_on         = 1,
 		.y_on         = 1,
 		.z_on         = 1,
-		.acc_datarate = 9,
+		.acc_datarate = 6,
 	};
 	i2c_write_reg_byte(LSM_ACC_MAG, CTRL_REG1_XM, xm_reg1.as_byte);
+
+	i2c_write_reg_byte(LSM_ACC_MAG, CTRL_REG2_XM, 0);
 
 	ctrl_reg5_xm_t xm_reg5 = {
 		.mag_datarate = 5,
@@ -46,7 +48,7 @@ int drv_LSM_init()
 	ctrl_reg7_xm_t xm_reg7 = {
 		.mag_mode      = 0,
 		.mag_low_power = 0,
-		.HPS_sel_acc   = 1, // use internal filter
+		.HPS_sel_acc   = 0, // use internal filter
 		.HPF_mode_acc  = 0,
 	};
 	i2c_write_reg_byte(LSM_ACC_MAG, CTRL_REG7_XM, xm_reg7.as_byte);
@@ -56,45 +58,25 @@ int drv_LSM_init()
 #endif
 }
 
-void drv_LSM_rot(vec3_16i_t* rot)
-{
-	i2c_read_reg_range(
-		LSM_GRY_TMP,
-		OUT_START_GYR,
-		sizeof(vec3_16i_t),
-		(uint8_t*)rot->buf
-	);
-}
-
-void drv_LSM_acc(vec3_16i_t* acc)
-{
-	i2c_read_reg_range(
-		LSM_ACC_MAG,
-		OUT_START_ACC,
-		sizeof(vec3_16i_t),
-		(uint8_t*)acc
-	);
-}
-
-void drv_LSM_mag(vec3_16i_t* mag)
-{
-	i2c_read_reg_range(
-		LSM_ACC_MAG,
-		OUT_START_MAG,
-		sizeof(vec3_16i_t),
-		(uint8_t*)mag
-	);
-}
-
 uint16_t drv_LSM_temp()
 {
 	uint16_t temp = 0;
 	i2c_read_reg_range(
 		LSM_ACC_MAG,
-		OUT_START_TMP,
+		LSM_START_TMP,
 		sizeof(temp),
 		(uint8_t*)&temp
 	);
 
 	return temp;
+}
+
+void drv_LSM_vec3(uint8_t dev, uint8_t start_reg, vec3_16i_t* vec)
+{
+	i2c_read_reg_range(
+		dev,
+		start_reg,
+		sizeof(vec3_16i_t),
+		(uint8_t*)vec
+	);
 }

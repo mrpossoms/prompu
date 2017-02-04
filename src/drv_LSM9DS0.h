@@ -17,15 +17,16 @@
 #define CTRL_REG2_G   0x21
 #define CTRL_REG4_G   0x23
 
-#define OUT_START_GYR 0x28
+#define LSM_START_GYR 0x28
 
 #define CTRL_REG1_XM  0x20
+#define CTRL_REG2_XM  0x21
 #define CTRL_REG5_XM  0x24
 #define CTRL_REG7_XM  0x26
 
-#define OUT_START_ACC 0x28
-#define OUT_START_MAG 0x08
-#define OUT_START_TMP 0x05
+#define LSM_START_ACC 0x28
+#define LSM_START_MAG 0x08
+#define LSM_START_TMP 0x05
 
 //     ___ _       _   ___ _               _
 //    / __| |_ _ _| | / __| |_ _ _ _  _ __| |_ ___
@@ -108,9 +109,7 @@ typedef union {
 
 int drv_LSM_init();
 
-void     drv_LSM_rot(vec3_16i_t* rot);
-void     drv_LSM_acc(vec3_16i_t* acc);
-void     drv_LSM_mag(vec3_16i_t* mag);
+void drv_LSM_vec3(uint8_t dev, uint8_t start_reg, vec3_16i_t* vec);
 uint16_t drv_LSM_temp();
 
 #endif

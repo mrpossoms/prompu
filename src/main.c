@@ -46,14 +46,19 @@ void main()
 	print("Starting\n");
 #endif
 	i2c_init();
+#ifdef DEBUG
+	print("I2C up\n");
+#endif
 	drv_LSM_init();
-
+#ifdef DEBUG
+	print("I2C drivers up\n");
+#endif
 	vec3_16i_t rot, acc, mag;
 	while(1)
 	{
-		drv_LSM_acc(&acc);
-		drv_LSM_rot(&rot);
-		drv_LSM_mag(&mag);
+		drv_LSM_vec3(LSM_ACC_MAG, LSM_START_ACC, &acc);
+		drv_LSM_vec3(LSM_GRY_TMP, LSM_START_GYR, &rot);
+		drv_LSM_vec3(LSM_ACC_MAG, LSM_START_MAG, &mag);
 
 		MARG_tick(
 			rot.x, rot.y, rot.z,

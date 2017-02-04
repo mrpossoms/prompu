@@ -1,5 +1,5 @@
 CC=propeller-elf-gcc
-C_FLAGS= -m32bit-doubles -Os -mlmm -std=c99 -s
+C_FLAGS= -m32bit-doubles -Os -mcmm -std=c99 -s
 INC=-Ilib/libsimpletools -Ilib/libsimpletext
 LIB=-Llib/libsimpletools/cmm -Llib/libsimpletext/cmm
 LINK=-lm -lsimpletext
@@ -26,7 +26,7 @@ check: all
 	propeller-elf-objdump -h out/firmware.elf
 
 flash: check
-	propeller-load -S -t -I $(PROP_GCC)/propeller-load out/firmware.elf -r
+	propeller-load -S20 -t -I $(PROP_GCC)/propeller-load out/firmware.elf -r
 
 clean:
 	rm out/*.o out/*.elf out/*.binary

@@ -6,42 +6,42 @@
 #define ALL_LOW sda_low();\
                 scl_low();
 
-_COGMEM volatile int scl_mask;
-_COGMEM volatile int scl_mask_inv;
-_COGMEM int sda_mask;
-_COGMEM int sda_mask_inv;
+volatile int scl_mask;
+volatile int scl_mask_inv;
+int sda_mask;
+int sda_mask_inv;
 
-_NAKED void scl_low()
+void scl_low()
 {
   OUTA &= scl_mask_inv;
   DIRA |= scl_mask;
 }
 
-_NAKED void sda_low()
+void sda_low()
 {
   OUTA &= sda_mask_inv;
   DIRA |= sda_mask;
 }
 
-_NAKED void scl_high()
+void scl_high()
 {
   OUTA &= scl_mask_inv;
   DIRA &= scl_mask_inv;
 }
 
-_NAKED void sda_high()
+void sda_high()
 {
   DIRA &= sda_mask_inv;
 }
 
-_NAKED void i2c_start()
+void i2c_start()
 {
   ALL_HIGH
   sda_low();
   scl_low();
 }
 
-_NAKED void i2c_stop()
+void i2c_stop()
 {
   ALL_LOW
   scl_high();
@@ -52,7 +52,7 @@ _NAKED void i2c_stop()
   sda_high();
 }
 
-_NAKED void i2c_open(int sclPin, int sdaPin)
+void i2c_open(int sclPin, int sdaPin)
 {
   scl_mask = (1 << sclPin);
   sda_mask = (1 << sdaPin);
@@ -61,7 +61,7 @@ _NAKED void i2c_open(int sclPin, int sdaPin)
   i2c_stop();
 }
 
-_NAKED int i2c_writeByte(int byte)
+int i2c_writeByte(int byte)
 {
   int result;
   int count = 8;
@@ -84,7 +84,7 @@ _NAKED int i2c_writeByte(int byte)
   return result != 0;
 }
 
-_NAKED int i2c_readByte(int ackState)
+int i2c_readByte(int ackState)
 {
   int byte = 0;
   int count = 8;
@@ -112,7 +112,7 @@ _NAKED int i2c_readByte(int ackState)
   return byte;
 }
 
-_NAKED int i2c_readData(unsigned char *data, int count)
+int i2c_readData(unsigned char *data, int count)
 {
   int n = 0;
   while(--count > 0) {
@@ -123,7 +123,7 @@ _NAKED int i2c_readData(unsigned char *data, int count)
   return n;
 }
 
-_NAKED void _i2c_init_read(uint8_t dev_addr, uint8_t reg)
+void _i2c_init_read(uint8_t dev_addr, uint8_t reg)
 {
   i2c_writeByte(dev_addr | I2C_WR);
   i2c_writeByte(reg);
@@ -131,7 +131,7 @@ _NAKED void _i2c_init_read(uint8_t dev_addr, uint8_t reg)
   i2c_writeByte(dev_addr | I2C_RD);
 }
 
-_NAKED uint8_t i2c_read_reg_byte(uint8_t dev_addr, uint8_t reg)
+uint8_t i2c_read_reg_byte(uint8_t dev_addr, uint8_t reg)
 {
   uint8_t byte = 0;
 
@@ -143,7 +143,7 @@ _NAKED uint8_t i2c_read_reg_byte(uint8_t dev_addr, uint8_t reg)
   return byte;
 }
 
-_NAKED void i2c_read_reg_range(
+void i2c_read_reg_range(
                         uint8_t dev_addr,
                         uint8_t reg,
                         int bytes,
@@ -158,7 +158,7 @@ _NAKED void i2c_read_reg_range(
   STOP
 }
 
-_NAKED void i2c_write_reg_byte(
+void i2c_write_reg_byte(
                         uint8_t dev_addr,
                         uint8_t reg,
                         uint8_t byte)
