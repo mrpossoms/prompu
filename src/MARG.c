@@ -1,7 +1,9 @@
 #include "MARG.h"
+#include "globals.h"
+#include <propeller.h>
 
 // System constants
-#define deltat 0.001f
+// #define deltat 0.001f
 #define gyroMeasError 3.14159265358979f * (5.0f / 180.0f)
 #define gyroMeasDrift 3.14159265358979f * (0.2f / 180.0f)
 #define beta (sqrt(3.0f / 4.0f) * gyroMeasError)
@@ -15,10 +17,11 @@
 float Q[4] = { 1, 0, 0, 0 };
 static float b_x = 1, b_z = 0;             // reference direction of flux in earth frame
 static float w_bx = 0, w_by = 0, w_bz = 0; // estimate gyroscope biases error
+static unsigned int LAST_CNT = 0;
 
-void MARG_tick(float w_x, float w_y, float w_z,
-               float a_x, float a_y, float a_z,
-               float m_x, float m_y, float m_z)
+float MARG_tick(float w_x, float w_y, float w_z,
+                float a_x, float a_y, float a_z,
+                float m_x, float m_y, float m_z)
 {
   // local system variables
   float norm;                           // vector norm
@@ -62,6 +65,11 @@ void MARG_tick(float w_x, float w_y, float w_z,
   float twom_x = 2.0f * m_x;
   float twom_y = 2.0f * m_y;
   float twom_z = 2.0f * m_z;
+
+	// update the time delta
+	float deltat = CYCLES / (float)CLKFREQ;
+
+	if(deltat <= 0) return 0;
 
   // normalise the accelerometer measurement
   norm = sqrt(a_x * a_x + a_y * a_y + a_z * a_z);
@@ -158,4 +166,6 @@ void MARG_tick(float w_x, float w_y, float w_z,
   // normalise the flux vector to have only components in the x and z
   b_x = sqrt((h_x * h_x) + (h_y * h_y));
   b_z = h_z;
+
+	return deltat;
 }

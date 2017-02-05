@@ -26,7 +26,10 @@ check: all
 	propeller-elf-objdump -h out/firmware.elf
 
 flash: check
-	propeller-load -S20 -t -I $(PROP_GCC)/propeller-load out/firmware.elf -r
+	propeller-load -S20 -I $(PROP_GCC)/propeller-load out/firmware.elf -r
+
+run: flash
+	screen /dev/cu.usbserial-* 115200
 
 clean:
 	rm out/*.o out/*.elf out/*.binary
