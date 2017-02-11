@@ -4,6 +4,8 @@ INC=-Ilib/libsimpletools -Ilib/libsimpletext
 LIB=-Llib/libsimpletools/cmm -Llib/libsimpletext/cmm
 LINK=-lm -lsimpletext
 SRC=src/i2c_util.c src/drv_LSM9DS0.c src/main.c
+#SERIAL=cu.usbserial-*
+SERIAL=/dev/ttyUSB0
 
 #
 all: i2c_util drv_LSM9DS0 MARG
@@ -26,10 +28,10 @@ check: all
 	propeller-elf-objdump -h out/firmware.elf
 
 flash: check
-	propeller-load -S20 -I $(PROP_GCC)/propeller-load out/firmware.elf -r
+	propeller-load -p $(SERIAL) -S20 -I $(PROP_GCC)/propeller-load out/firmware.elf -r
 
 run: flash
-	screen /dev/cu.usbserial-* 115200
+	screen $(SERIAL) 115200
 
 clean:
 	rm out/*.o out/*.elf out/*.binary
