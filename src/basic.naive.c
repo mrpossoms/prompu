@@ -3,9 +3,9 @@
 #include <propeller.h>
 
 #define cross_prod(r, a, b) {\
-	(r)[0] = a[1] * b[2] - a[2] * b[1];\
-	(r)[1] = a[2] * b[0] - a[0] * b[2];\
-	(r)[2] = a[0] * b[1] - a[1] * b[0];\
+	(r)[0] = (a)[1] * (b)[2] - (a)[2] * (b)[1];\
+	(r)[1] = (a)[2] * (b)[0] - (a)[0] * (b)[2];\
+	(r)[2] = (a)[0] * (b)[1] - (a)[1] * (b)[0];\
 }\
 
 #define dot(a, b) ((a)[0] * (b)[0] + (a)[1] * (b)[1] + (a)[2] * (b)[2])
@@ -68,10 +68,10 @@ void quat_from_vec(float q[], float* v)
 
 	cross_prod(a, v, REF_DIR);
 
-	q[0] = cosf(t / 2);
-	q[1] = a[0] * s;
-	q[2] = a[1] * s;
-	q[3] = a[2] * s;
+	q[0] = a[0] * s;
+	q[1] = a[1] * s;
+	q[2] = a[2] * s;
+	q[3] = cosf(t / 2);
 }	
 
 // current quaternion estimation with inital conditions
@@ -88,20 +88,20 @@ float MARG_tick(int w_x, int w_y, int w_z,
 
 	// calculate the inverse magnitude of the mag and acc
 	// vectors and normalize
-	m_mag = 1.f / sqrt(dot(m, m)); a_mag = 1.f / sqrt(dot(a, a));
+	m_mag = 1.f / sqrtf(dot(m, m)); a_mag = 1.f / sqrtf(dot(a, a));
 	scl3(basis.up.v, a, a_mag);
-	scl3(m, m, m_mag);
+	scl3(basis.forward.v, m, m_mag);
 
 	// complete orthogonal basis
-	cross_prod(basis.left.v, basis.up.v, m);
+	cross_prod(basis.left.v, basis.up.v, basis.forward.v);
 	cross_prod(basis.forward.v, basis.left.v, basis.up.v);
 
 	// create orientation quaternion from computed forward vector
 	quat_from_vec(vec_quat, basis.forward.v);
-	
+
 	// compute the derivative of orientation in respect to
 	// angular rate of change
-	float w[] = { w_x, w_y, w_z, 0 };
+	float w[] = { w_x / 1000.f, w_y / 1000.f, w_z / 1000.f, 0 };
 	float d_q_est[4], q_tmp[4];
 
 	scl4(q_tmp, Q, 0.5);

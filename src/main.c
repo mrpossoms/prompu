@@ -23,7 +23,7 @@
 	 http://learn.parallax.com/propeller-c-tutorials
 */
 #define DEBUG
-// #define PRINT_RAW
+//#define PRINT_RAW
 #define PRINT_QUAT
 // #define THERMAL_STAT_COLLECTION
 
@@ -63,10 +63,14 @@ void print_serial()
 #endif
 
 #ifdef PRINT_QUAT
+/*
 	print(
-		"Q = { %f, %f, %f, %f }\n",
+		"%f %f %f %f\n",
 		Q[0], Q[1], Q[2], Q[3]
 	);
+*/
+	int* I = (int*)Q;
+	printf("%8x%8x%8x%8x\n", I[0], I[1], I[2], I[3]);
 #endif
 
 #ifdef PRINT_RAW
@@ -102,13 +106,13 @@ void main()
 		TEMP = drv_LSM_temp();
 
 		float dt = MARG_tick(
-			ROT.x / GRY_S, ROT.y / GRY_S, ROT.z / GRY_S,
-			ACC.x / ACC_S, ACC.y / ACC_S, ACC.z / ACC_S,
-			MAG.x / MAG_S, MAG.y / MAG_S, MAG.z / MAG_S
+			ROT.x, ROT.y, ROT.z,
+			ACC.x, ACC.y, ACC.z,
+			MAG.x, MAG.y, MAG.z
 		);
 
 #ifdef DEBUG
-		print("Sec/tick : %f", dt);
+		//print("Sec/tick : %f", dt);
 		print_serial();
 		nextcnt = waitcnt2(nextcnt, WAIT);
 #endif

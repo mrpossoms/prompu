@@ -8,7 +8,7 @@ SRC=src/i2c_util.c src/drv_LSM9DS0.c src/main.c
 SERIAL=/dev/ttyUSB0
 
 #
-all: i2c_util drv_LSM9DS0 MARG
+all: i2c_util drv_LSM9DS0 basic.naive 
 	$(CC) $(INC) $(LIB) -o out/firmware.elf $(C_FLAGS) out/*.o src/main.c $(LINK)
 #
 
@@ -21,6 +21,8 @@ i2c_util:
 MARG:
 	$(CC) $(INC) $(LIB) $(C_FLAGS) -c src/$@.c -o out/$@.o
 
+basic.naive:
+	$(CC) $(INC) $(LIB) $(C_FLAGS) -c src/$@.c -o out/$@.o
 
 .PHONY: flash
 

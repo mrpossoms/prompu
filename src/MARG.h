@@ -3,7 +3,7 @@
 #include <math.h>
 
 typedef union {
-	struct { float x, y, z };
+	struct { float x, y, z; };
 	float v[3];
 } vec3f_t;
 
