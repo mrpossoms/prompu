@@ -1,6 +1,7 @@
 #include "MARG.h"
 #include "globals.h"
-#include <propeller.h>
+
+#include "boards.h"
 
 // System constants
 // #define deltat 0.001f

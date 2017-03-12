@@ -1,6 +1,6 @@
 #include "MARG.h"
 #include "globals.h"
-#include <propeller.h>
+#include "boards.h"
 
 #define cross_prod(r, a, b) {\
 	(r)[0] = (a)[1] * (b)[2] - (a)[2] * (b)[1];\
@@ -8,20 +8,20 @@
 	(r)[2] = (a)[0] * (b)[1] - (a)[1] * (b)[0];\
 }\
 
-#define dot(a, b) ((a)[0] * (b)[0] + (a)[1] * (b)[1] + (a)[2] * (b)[2])
+#define dot3(a, b) ((a)[0] * (b)[0] + (a)[1] * (b)[1] + (a)[2] * (b)[2])
 #define dot4(a, b) ((a)[0] * (b)[0] + (a)[1] * (b)[1] + (a)[2] * (b)[2] + (a)[3] * (b)[3])
 
 #define scl3(r, v, s) {\
-	(r)[0] = (v)[0] * s;\
-	(r)[1] = (v)[1] * s;\
-	(r)[2] = (v)[2] * s;\
+	(r)[0] = (v)[0] * (s);\
+	(r)[1] = (v)[1] * (s);\
+	(r)[2] = (v)[2] * (s);\
 }\
 
 #define scl4(r, v, s) {\
-	(r)[0] = (v)[0] * s;\
-	(r)[1] = (v)[1] * s;\
-	(r)[2] = (v)[2] * s;\
-	(r)[3] = (v)[3] * s;\
+	(r)[0] = (v)[0] * (s);\
+	(r)[1] = (v)[1] * (s);\
+	(r)[2] = (v)[2] * (s);\
+	(r)[3] = (v)[3] * (s);\
 }\
 
 #define add3(r, u, v) {\
@@ -45,7 +45,6 @@
 	(r)[3] = (v)[3] * vs + (w)[3] * t;\
 }\
 
-const float REF_DIR[] = { 0, 1, 0 };
 
 void quat_mul(float* r, float* p, float* q)
 {	
@@ -56,17 +55,18 @@ void quat_mul(float* r, float* p, float* q)
 	scl3(tmp, q, p[3]);
 	add3(r, r, tmp);
 
-	r[3] = p[3] * q[3] - dot(p, q);
+	r[3] = p[3] * q[3] - dot3(p, q);
 }
 
-void quat_from_vec(float q[], float* v)
+static void quat_from_vec(float* q, float* v)
 {
 	// TODO
-	float t = acosf(dot(v, REF_DIR));
+	const float ref_dir[] = { 0 , 1, 0 };
+	float t = acosf(dot3(v, ref_dir));
 	float s = sinf(t / 2);
 	float a[3];
 
-	cross_prod(a, v, REF_DIR);
+	cross_prod(a, v, ref_dir);
 
 	q[0] = a[0] * s;
 	q[1] = a[1] * s;
@@ -76,19 +76,22 @@ void quat_from_vec(float q[], float* v)
 
 // current quaternion estimation with inital conditions
 float Q[4] = { 0, 0, 0, 1 };
-static unsigned int LAST_CNT = 0;
+static float vec_quat[4];
+static float w_quat[4];
+static float d_q_est[4], q_tmp[4];
+static float m_mag, a_mag;
+static basisf_t basis;
 
-float MARG_tick(int w_x, int w_y, int w_z,
-                int a_x, int a_y, int a_z,
-                int m_x, int m_y, int m_z)
+void MARG_tick(int w_x, int w_y, int w_z,
+               int a_x, int a_y, int a_z,
+               int m_x, int m_y, int m_z,
+               float delta_t)
 {
 	int m[] = { m_x, m_y, m_z }, a[] = { a_x, a_y, a_z };
-	float m_mag, a_mag, vec_quat[4], w_quat[4];
-	basisf_t basis;
 
 	// calculate the inverse magnitude of the mag and acc
 	// vectors and normalize
-	m_mag = 1.f / sqrtf(dot(m, m)); a_mag = 1.f / sqrtf(dot(a, a));
+	m_mag = 1.f / sqrt(dot3(m, m)); a_mag = 1.f / sqrt(dot3(a, a));
 	scl3(basis.up.v, a, a_mag);
 	scl3(basis.forward.v, m, m_mag);
 
@@ -101,17 +104,13 @@ float MARG_tick(int w_x, int w_y, int w_z,
 
 	// compute the derivative of orientation in respect to
 	// angular rate of change
-	float w[] = { w_x / 1000.f, w_y / 1000.f, w_z / 1000.f, 0 };
-	float d_q_est[4], q_tmp[4];
+	float w[] = { w_x / 1000.f, w_y / 1000.f, w_z / 1000.f, 0.f };
 
-	scl4(q_tmp, Q, 0.5);
+	scl4(q_tmp, Q, 0.5f);
 	quat_mul(d_q_est, q_tmp, w);
 
-	// update the time delta
-	float deltat = CYCLES / (float)CLKFREQ;
-
 	// compute the new estimated orientation from angular rate of change
-	scl4(d_q_est, d_q_est, deltat);
+	scl4(d_q_est, d_q_est, delta_t);
 	add4(w_quat, Q, d_q_est);
 
 	// combine both estimates lerped by a convergence value
@@ -121,6 +120,4 @@ float MARG_tick(int w_x, int w_y, int w_z,
 	lerp4(Q, vec_quat, w_quat, conv);
 	a_mag = 1.f / sqrt(dot4(Q, Q));  // normalize the result of the lerp
 	scl4(Q, Q, a_mag);               // since it won't lie on the unit sphere.
-
-	return deltat;
 }

@@ -1,39 +1,53 @@
-CC=propeller-elf-gcc
-C_FLAGS= -m32bit-doubles -Os -mcmm -std=c99 -s
-INC=-Ilib/libsimpletools -Ilib/libsimpletext
-LIB=-Llib/libsimpletools/cmm -Llib/libsimpletext/cmm
-LINK=-lm -lsimpletext
-SRC=src/i2c_util.c src/drv_LSM9DS0.c src/main.c
+SRC+= main.c i2c_util.c drv_LSM9DS0.c basic.naive.c
+
+include boards/TM4C123G/vars.mk
+#include boards/propeller.mk
+
 #SERIAL=cu.usbserial-*
 SERIAL=/dev/ttyUSB0
+CFLAGS+=-std=c11 -I./src -g -O0 -D DEBUG
+OUTDIR=./out
+TARGET=prompu
 
-#
-all: i2c_util drv_LSM9DS0 basic.naive 
-	$(CC) $(INC) $(LIB) -o out/firmware.elf $(C_FLAGS) out/*.o src/main.c $(LINK)
-#
 
-drv_LSM9DS0:
-	$(CC) $(INC) $(LIB) $(C_FLAGS) -c src/$@.c -o out/$@.o
+# list of object files, placed in the build directory regardless of source path
+OBJECTS = $(addprefix $(OUTDIR)/,$(notdir $(SRC:.c=.o)))
 
-i2c_util:
-	$(CC) $(INC) $(LIB) $(C_FLAGS) -c src/$@.c -o out/$@.o
+#.PHONY:
+#what:
+#	echo $(SRC)
+#	echo $(OBJECTS)
 
-MARG:
-	$(CC) $(INC) $(LIB) $(C_FLAGS) -c src/$@.c -o out/$@.o
+# default: build bin
+all: $(OUTDIR)/$(TARGET).bin
 
-basic.naive:
-	$(CC) $(INC) $(LIB) $(C_FLAGS) -c src/$@.c -o out/$@.o
+$(OUTDIR)/%.o: src/boards/$(MCU)/%.c | $(OUTDIR)
+	$(CC) -o $@ -c $^ $(INC) $(CFLAGS)
+
+$(OUTDIR)/%.o: src/%.c | $(OUTDIR)
+	$(CC) -o $@ -c $^ $(INC) $(CFLAGS)
+	#$(CC) $(CFLAGS) -c $^ 
+
+$(OUTDIR)/a.out: $(OBJECTS)
+	$(CC) $(CFLAGS)  $(LDFLAGS) $^ -o $@ $(LINK) 
+
+$(OUTDIR)/$(TARGET).bin: $(OUTDIR)/a.out
+	$(OBJCOPY) -O binary $< $@
+
+$(OUTDIR):
+	mkdir $(OUTDIR)
 
 .PHONY: flash
 
 check: all
 	propeller-elf-objdump -h out/firmware.elf
 
-flash: check
-	propeller-load -p $(SERIAL) -S20 -I $(PROP_GCC)/propeller-load out/firmware.elf -r
+flash: all
+	sudo lm4flash out/prompu.bin
+	#propeller-load -p $(SERIAL) -S20 -I $(PROP_GCC)/propeller-load out/firmware.elf -r
 
 run: flash
 	screen $(SERIAL) 115200
 
 clean:
-	rm out/*.o out/*.elf out/*.binary
+	rm -rf $(OUTDIR)

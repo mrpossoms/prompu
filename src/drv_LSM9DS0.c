@@ -1,9 +1,9 @@
 #include "drv_LSM9DS0.h"
 
+#include "boards.h"
+
 int drv_LSM_init()
 {
-	uint8_t byte = 0;
-
 #ifdef LOG_LSM
 	print("drv_LSM_init beginning...");
 #endif
@@ -56,6 +56,13 @@ int drv_LSM_init()
 #ifdef LOG_LSM
 	print("OK\n");
 #endif
+
+	return 0;
+}
+
+uint8_t drv_LSM_whoami()
+{
+	return i2c_read_reg_byte(LSM_GRY_TMP, WHO_AM_I_G);	
 }
 
 uint16_t drv_LSM_temp()
@@ -76,7 +83,7 @@ void drv_LSM_vec3(uint8_t dev, uint8_t start_reg, vec3_16i_t* vec)
 	i2c_read_reg_range(
 		dev,
 		start_reg,
-		sizeof(vec3_16i_t),
-		(uint8_t*)vec
+		sizeof(int16_t) * 3,
+		vec->buf
 	);
 }

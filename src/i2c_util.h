@@ -1,16 +1,18 @@
 #ifndef _I2C_UTIL
 #define _I2C_UTIL
 
-#include <propeller.h>
-// #include "simplei2c.h"
+#include "boards.h"
 
-#define I2C_RD 1
-#define I2C_WR 0
+typedef struct {
+#ifdef TARGET_IS_PROPELLER
+	i2c prop_i2c;
+#endif
+	int i2c_module;
+} i2c_t;
 
-#define START i2c_start();
-#define STOP  i2c_stop();
+extern i2c_t* I2C_SELECTED;
 
-void    i2c_open(int sclPin, int sdaPin);
+void    i2c_init(i2c_t* bus, int scl, int sda, int flags);
 uint8_t i2c_read_reg_byte(uint8_t dev_addr, uint8_t reg);
 void    i2c_read_reg_range(
                            uint8_t dev_addr,

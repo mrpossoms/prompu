@@ -109,6 +109,7 @@ typedef union {
 
 int drv_LSM_init();
 
+uint8_t drv_LSM_whoami();
 void drv_LSM_vec3(uint8_t dev, uint8_t start_reg, vec3_16i_t* vec);
 uint16_t drv_LSM_temp();
 

@@ -1,41 +1,15 @@
-/*
-	Welcome.c
-
-	Welcome to SimpleIDE, the C programming environment that makes it easy to
-	get started with the multi-core Propeller microcontroller!
-
-	To run this program:
-
-		- Is this the first Parallax software you've installed on your computer?
-			If so, install USB driver's now: www.parallax.com/usbdrivers
-		- Connect your Propeller board to your computer's USB.  Also connect power
-			to the board if needed, and if it has a power switch, turn it on.
-		- Make sure to select your COM port from the toolbar dropdown menu in the
-			upper-right corner.  If you are unsure which COM port your board is
-			connected to, disconnect it and click the dropdown to check the port
-			list, then reconnect it and check again.
-		- Click Program and select Run with Terminal (or click the Run with Terminal
-			button).  The SimpleIDE Terminal should appear and display the "Hello!"
-			message.
-
-	 Next, check the Help menu for new online tutorials, software manual, and
-	 reference material.
-	 http://learn.parallax.com/propeller-c-tutorials
-*/
 #define DEBUG
-//#define PRINT_RAW
+#define PRINT_RAW
 #define PRINT_QUAT
 // #define THERMAL_STAT_COLLECTION
 
-#include <propeller.h>
+#include <math.h>
+#include "boards.h"
 #include "globals.h"
 #include "i2c_util.h"
+#include "uart.h"
 #include "drv_LSM9DS0.h"
 #include "MARG.h"
-
-#ifdef DEBUG
-#include "simpletext.h"
-#endif
 
 #define ACC_S 0.0000617f
 #define GRY_S 0.01f
@@ -46,75 +20,90 @@ unsigned int LAST_CNT, CYCLES;
 static uint16_t TEMP;
 static vec3_16i_t ROT, ACC, MAG;
 
-int i2c_init()
+i2c_t I2C_IMU;
+
+#define Q_HEX(off) *((int*)(Q + (off)))
+
+void printfp(float f, int base)
 {
-	i2c_open(18, 17);
+	int i = f * base;
+	int abs_i = abs(i);
+	UARTprintf("%d.%d ", i / base, abs_i - (abs_i / base ));
 }
 
 void print_serial()
 {
-#ifdef THERMAL_STAT_COLLECTION
-	const char VEC_FMT[] = "%d,%d,%d,";
-
-	print(VEC_FMT, ACC.x, ACC.y, ACC.z);
-	print(VEC_FMT, ROT.x, ROT.y, ROT.z);
-	print(VEC_FMT, MAG.x, MAG.y, MAG.z);
-	print("%d\n", TEMP);
-#endif
-
 #ifdef PRINT_QUAT
-/*
-	print(
-		"%f %f %f %f\n",
-		Q[0], Q[1], Q[2], Q[3]
-	);
-*/
-	int* I = (int*)Q;
-	printf("%8x%8x%8x%8x\n", I[0], I[1], I[2], I[3]);
+
+	printfp(Q[0], 1000);	
+	printfp(Q[1], 1000);	
+	printfp(Q[2], 1000);	
+	printfp(Q[3], 1000);
+	UARTprintf("\n");
+
+	UARTprintf("%8x%8x%8x%8x\n", Q_HEX(0), Q_HEX(1), Q_HEX(2), Q_HEX(3));
 #endif
 
 #ifdef PRINT_RAW
-	print("ACC: %d, %d, %d\n", ACC.x, ACC.y, ACC.z);
-	print("gry: %d, %d, %d\n", ROT.x, ROT.y, ROT.z);
-	print("MAG: %d, %d, %d\n", MAG.x, MAG.y, MAG.z);
-	print("temp: %d\n", TEMP);
+	UARTprintf("ACC: %d, %d, %d\n", ACC.x, ACC.y, ACC.z);
+	UARTprintf("gry: %d, %d, %d\n", ROT.x, ROT.y, ROT.z);
+	UARTprintf("MAG: %d, %d, %d\n", MAG.x, MAG.y, MAG.z);
+	UARTprintf("temp: %d\n", TEMP);
 #endif
 }
 
-void main()
+int main()
 {
-	LAST_CNT = CNT;
+	SysCtlClockSet(SYSCTL_SYSDIV_1 | SYSCTL_USE_OSC | SYSCTL_XTAL_16MHZ | SYSCTL_OSC_MAIN);
+	i2c_init(&I2C_IMU, GPIO_PIN_6, GPIO_PIN_7, SYSCTL_PERIPH_GPIOA);
+	uart_init(115200);
+	
+	FPUEnable();
+	FPUStackingEnable();
 
 #if defined(DEBUG) && !defined(THERMAL_STAT_COLLECTION)
-	print("Starting\n");
+	UARTprintf("Starting\n");
 #endif
 
-	i2c_init();
+
+	I2C_SELECTED = &I2C_IMU;
 	drv_LSM_init();
 
+#ifdef TARGET_IS_PROPELLER
+	LAST_CNT = CNT;
 	const int WAIT = CLKFREQ / 10; // 10 HZ
 	volatile unsigned int nextcnt = CNT + WAIT;
+#endif
 
 	while(1)
 	{
+#ifdef TARGET_IS_PROPELLER
 		CYCLES = CNT - LAST_CNT;
 		LAST_CNT = CNT;
-
+#endif
 		drv_LSM_vec3(LSM_ACC_MAG, LSM_START_ACC, &ACC);
 		drv_LSM_vec3(LSM_GRY_TMP, LSM_START_GYR, &ROT);
 		drv_LSM_vec3(LSM_ACC_MAG, LSM_START_MAG, &MAG);
 		TEMP = drv_LSM_temp();
 
-		float dt = MARG_tick(
+		MARG_tick(
 			ROT.x, ROT.y, ROT.z,
 			ACC.x, ACC.y, ACC.z,
-			MAG.x, MAG.y, MAG.z
+			MAG.x, MAG.y, MAG.z,
+			0.1
 		);
-
-#ifdef DEBUG
+#if defined(DEBUG)
 		//print("Sec/tick : %f", dt);
 		print_serial();
+#endif
+
+#ifdef TARGET_IS_PROPELLER
 		nextcnt = waitcnt2(nextcnt, WAIT);
 #endif
+
+		ROM_SysCtlDelay(5000000);
+
 	}
+
+	return 0;
 }

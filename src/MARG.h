@@ -19,8 +19,9 @@ typedef struct {
 
 extern float Q[4];
 
-float MARG_tick(int w_x, int w_y, int w_z,
-                int a_x, int a_y, int a_z,
-                int m_x, int m_y, int m_z);
+void MARG_tick(int w_x, int w_y, int w_z,
+               int a_x, int a_y, int a_z,
+               int m_x, int m_y, int m_z,
+               float delta_t);
 
 #endif
