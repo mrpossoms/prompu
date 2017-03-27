@@ -1,5 +1,5 @@
 #define DEBUG
-#define PRINT_RAW
+//#define PRINT_RAW
 #define PRINT_QUAT
 // #define THERMAL_STAT_COLLECTION
 
@@ -41,7 +41,7 @@ void print_serial()
 	printfp(Q[3], 1000);
 	UARTprintf("\n");
 
-	UARTprintf("%8x%8x%8x%8x\n", Q_HEX(0), Q_HEX(1), Q_HEX(2), Q_HEX(3));
+	//UARTprintf("%8x%8x%8x%8x\n", Q_HEX(0), Q_HEX(1), Q_HEX(2), Q_HEX(3));
 #endif
 
 #ifdef PRINT_RAW
@@ -101,7 +101,7 @@ int main()
 		nextcnt = waitcnt2(nextcnt, WAIT);
 #endif
 
-		ROM_SysCtlDelay(5000000);
+		ROM_SysCtlDelay(1000000);
 
 	}
 
