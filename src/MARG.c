@@ -9,20 +9,25 @@
 #define gyroMeasDrift 3.14159265358979f * (0.2f / 180.0f)
 #define beta (sqrt(3.0f / 4.0f) * gyroMeasError)
 #define zeta (sqrt(3.0f / 4.0f) * gyroMeasDrift)
-// Global system variables
-//float a_x, a_y, a_z; // accelerometer measurements
-//float w_x, w_y, w_z; // gyroscope measurements in rad/s
-//float m_x, m_y, m_z; // magnetometer measurements
 
 // current quaternion estimation with inital conditions
 float Q[4] = { 1, 0, 0, 0 };
 static float b_x = 1, b_z = 0;             // reference direction of flux in earth frame
 static float w_bx = 0, w_by = 0, w_bz = 0; // estimate gyroscope biases error
-static unsigned int LAST_CNT = 0;
 
-float MARG_tick(float w_x, float w_y, float w_z,
+void MARG_reset()
+{
+	Q[0] = 1;
+	Q[1] = Q[2] = Q[3] = 0;
+
+	b_x = 1; b_z = 0;
+	w_bx = w_by = w_bz = 0;
+}
+
+void MARG_tick(float w_x, float  w_y, float w_z,
                 float a_x, float a_y, float a_z,
-                float m_x, float m_y, float m_z)
+                float m_x, float m_y, float m_z,
+		float delta_t)
 {
   // local system variables
   float norm;                           // vector norm
@@ -67,10 +72,10 @@ float MARG_tick(float w_x, float w_y, float w_z,
   float twom_y = 2.0f * m_y;
   float twom_z = 2.0f * m_z;
 
-	// update the time delta
-	float deltat = CYCLES / (float)CLKFREQ;
-
-	if(deltat <= 0) return 0;
+  //w_x = w_y = w_z = 0;
+	w_x /= 16000;
+	w_y /= 16000;
+	w_z /= 16000;
 
   // normalise the accelerometer measurement
   norm = sqrt(a_x * a_x + a_y * a_y + a_z * a_z);
@@ -88,7 +93,7 @@ float MARG_tick(float w_x, float w_y, float w_z,
   f_2 = twoSEq_1 * Q[1] + twoSEq_3 * Q[3] - a_y;
   f_3 = 1.0f - twoSEq_2 * Q[1] - twoSEq_3 * Q[2] - a_z;
   f_4 = twob_x * (0.5f - Q[2] * Q[2] - Q[3] * Q[3]) + twob_z * (SEq_2SEq_4 - SEq_1SEq_3) - m_x;
-  f_5 = twob_x * (Q[1] * Q[2] - Q[0] * Q[3]) + twob_z * (Q[1] * Q[1] + Q[2] * Q[3]) - m_y;
+  f_5 = twob_x * (Q[1] * Q[2] - Q[0] * Q[3]) + twob_z * (Q[0] * Q[1] + Q[2] * Q[3]) - m_y;
   f_6 = twob_x * (SEq_1SEq_3 + SEq_2SEq_4) + twob_z * (0.5f - Q[1] * Q[1] - Q[2] * Q[2]) - m_z;
   J_11or24 = twoSEq_3;                     // J_11 negated in matrix multiplication
   J_12or23 = 2.0f * Q[3];                 // J_12 negated in matrix multiplication
@@ -127,9 +132,10 @@ float MARG_tick(float w_x, float w_y, float w_z,
   w_err_y = twoSEq_1 * SEqHatDot_3 + twoSEq_2 * SEqHatDot_4 - twoSEq_3 * SEqHatDot_1 - twoSEq_4 * SEqHatDot_2;
   w_err_z = twoSEq_1 * SEqHatDot_4 - twoSEq_2 * SEqHatDot_3 + twoSEq_3 * SEqHatDot_2 - twoSEq_4 * SEqHatDot_1;
 
-  // compute and remove the gyroscope baises w_bx += w_err_x * deltat * zeta;
-  w_by += w_err_y * deltat * zeta;
-  w_bz += w_err_z * deltat * zeta;
+  // compute and remove the gyroscope baises
+  w_bx += w_err_x * delta_t * zeta;
+  w_by += w_err_y * delta_t * zeta;
+  w_bz += w_err_z * delta_t * zeta;
   w_x -= w_bx;
   w_y -= w_by;
   w_z -= w_bz;
@@ -140,14 +146,15 @@ float MARG_tick(float w_x, float w_y, float w_z,
   SEqDot_omega_3 = halfSEq_1 * w_y - halfSEq_2 * w_z + halfSEq_4 * w_x;
   SEqDot_omega_4 = halfSEq_1 * w_z + halfSEq_2 * w_y - halfSEq_3 * w_x;
 
+
   // compute then integrate the estimated quaternion rate
-  Q[0] += (SEqDot_omega_1 - (beta * SEqHatDot_1)) * deltat;
-  Q[1] += (SEqDot_omega_2 - (beta * SEqHatDot_2)) * deltat;
-  Q[2] += (SEqDot_omega_3 - (beta * SEqHatDot_3)) * deltat;
-  Q[3] += (SEqDot_omega_4 - (beta * SEqHatDot_4)) * deltat;
+  Q[0] += (SEqDot_omega_1 - (beta * SEqHatDot_1)) * delta_t;
+  Q[1] += (SEqDot_omega_2 - (beta * SEqHatDot_2)) * delta_t;
+  Q[2] += (SEqDot_omega_3 - (beta * SEqHatDot_3)) * delta_t;
+  Q[3] += (SEqDot_omega_4 - (beta * SEqHatDot_4)) * delta_t;
 
   // normalise quaternion
-  norm = sqrt(Q[1] * Q[0] + Q[1] * Q[1] + Q[2] * Q[2] + Q[3] * Q[3]);
+  norm = sqrt(Q[0] * Q[0] + Q[1] * Q[1] + Q[2] * Q[2] + Q[3] * Q[3]);
   Q[0] /= norm;
   Q[1] /= norm;
   Q[2] /= norm;
@@ -168,5 +175,4 @@ float MARG_tick(float w_x, float w_y, float w_z,
   b_x = sqrt((h_x * h_x) + (h_y * h_y));
   b_z = h_z;
 
-	return deltat;
 }

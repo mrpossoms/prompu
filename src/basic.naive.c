@@ -61,7 +61,7 @@ void quat_mul(float* r, float* p, float* q)
 static void quat_from_vec(float* q, float* v)
 {
 	// TODO
-	const float ref_dir[] = { 0 , 1, 0 };
+	float ref_dir[] = { 0, 1, 0 };
 	float t = acosf(dot3(v, ref_dir));
 	float s = sinf(t / 2);
 	float a[3];
@@ -72,15 +72,31 @@ static void quat_from_vec(float* q, float* v)
 	q[1] = a[1] * s;
 	q[2] = a[2] * s;
 	q[3] = cosf(t / 2);
+
+	float mag = 1.f / sqrt(dot4(q, q));  // normalize the result of the lerp
+	scl4(q, q, mag);               // since it won't lie on the unit sphere.
+
 }	
 
 // current quaternion estimation with inital conditions
-float Q[4] = { 0, 0, 0, 1 };
+float Q[4];
 static float vec_quat[4];
 static float w_quat[4];
 static float d_q_est[4], q_tmp[4];
 static float m_mag, a_mag;
 static basisf_t basis;
+
+static void quat_ident(float* q)
+{
+	q[0] = q[1] = q[2] = 0;
+	q[3] = 1;
+}
+
+void MARG_reset()
+{
+	quat_ident(Q);
+	quat_ident(w_quat);
+}
 
 void MARG_tick(int w_x, int w_y, int w_z,
                int a_x, int a_y, int a_z,
@@ -100,24 +116,33 @@ void MARG_tick(int w_x, int w_y, int w_z,
 	cross_prod(basis.forward.v, basis.left.v, basis.up.v);
 
 	// create orientation quaternion from computed forward vector
+	//quat_from_vec(Q, basis.forward.v);
+
 	quat_from_vec(vec_quat, basis.forward.v);
 
 	// compute the derivative of orientation in respect to
 	// angular rate of change
-	float w[] = { w_x / 1000.f, w_y / 1000.f, w_z / 1000.f, 0.f };
+	//w_x = w_y = w_z = 0;
+	const float s = 16000.f;
+	float w[] = { w_x / s, w_y / s, w_z / s, 0.f };
 
-	scl4(q_tmp, Q, 0.5f);
+	//quat_mul(Q, Q, w);
+
+	scl4(q_tmp, Q, 0.5);
 	quat_mul(d_q_est, q_tmp, w);
 
 	// compute the new estimated orientation from angular rate of change
 	scl4(d_q_est, d_q_est, delta_t);
 	add4(w_quat, Q, d_q_est);
+	a_mag = 1.f / sqrt(dot4(w_quat, w_quat));  // normalize the result of the lerp
+	scl4(w_quat, w_quat, a_mag);
 
 	// combine both estimates lerped by a convergence value
-	const float conv = 0.9f; // Convergence rate, favors w_quat. But should be
+	const float conv = 1.0f; // Convergence rate, favors w_quat. But should be
 	                         // small enough to allow vec_quat to counter-act
 				 // the drift of the gyroscope
 	lerp4(Q, vec_quat, w_quat, conv);
 	a_mag = 1.f / sqrt(dot4(Q, Q));  // normalize the result of the lerp
 	scl4(Q, Q, a_mag);               // since it won't lie on the unit sphere.
+
 }

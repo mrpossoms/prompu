@@ -44,7 +44,7 @@ int main(int argc, char* argv[])
 	Plastic plastic;
 
 	// Sphere subject(Vec3(0, 0, 4), 1);
-	Plane subject(Vec3(0, 0, 4), Vec3(-0.75f, -0.75f, 0), Vec3(0.75f, 0.75f, 0));
+	Plane subject(Vec3(0, 0, 4), Vec3(-1, -1, 0), Vec3(1, 1, 0));
 	Sphere sphere1(Vec3(0, 0, 80), 70);
 
 	subject.material = &plastic;
@@ -67,6 +67,7 @@ int main(int argc, char* argv[])
 		char s_buf[256] = {};
 		ssize_t len = read(serial, s_buf, 256);
 		sscanf(s_buf, "%f %f %f %f\n", q.v, q.v + 1, q.v + 2, q.v + 3);
+		//quat_norm(q.v, q.v);
 
 		getmaxyx(stdscr, info.height, info.width);
 		uint8_t buf[info.width * info.height * 3];
@@ -88,6 +89,8 @@ int main(int argc, char* argv[])
 				addch(row[j * 3]);
 			}
 		}
+
+		mvaddnstr(0, 0, s_buf, len - 2);
 
 		refresh();
 		// usleep(1);
