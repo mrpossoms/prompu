@@ -14,6 +14,49 @@
 float Q[4] = { 1, 0, 0, 0 };
 static float b_x = 1, b_z = 0;             // reference direction of flux in earth frame
 static float w_bx = 0, w_by = 0, w_bz = 0; // estimate gyroscope biases error
+// local system variables
+static float norm;                           // vector norm
+static float SEqDot_omega_1, SEqDot_omega_2,
+        SEqDot_omega_3, SEqDot_omega_4; // quaternion rate from gyroscopes elements
+static float f_1, f_2, f_3, f_4, f_5, f_6;   // objective function
+static float J_11or24, J_12or23, J_13or22, J_14or21,
+        J_32, J_33,
+        J_41, J_42, J_43, J_44,
+        J_51, J_52, J_53, J_54,
+        J_61, J_62, J_63, J_64;         // objective function Jacobian elements
+static float SEqHatDot_1, SEqHatDot_2,
+        SEqHatDot_3, SEqHatDot_4;       // estimated direction of the gyroscope error
+static float w_err_x, w_err_y, w_err_z;      // estimated direction of the gyroscope error (angular)
+static float h_x, h_y, h_z;                  // computed flux in the earth frame
+static float halfSEq_1;
+static float halfSEq_2;
+static float halfSEq_3;
+static float halfSEq_4;
+static float twoSEq_1;
+static float twoSEq_2;
+static float twoSEq_3;
+static float twoSEq_4;
+static float twob_x;
+static float twob_z;
+static float twob_xSEq_1;
+static float twob_xSEq_2;
+static float twob_xSEq_3;
+static float twob_xSEq_4;
+static float twob_zSEq_1;
+static float twob_zSEq_2;
+static float twob_zSEq_3;
+static float twob_zSEq_4;
+static float SEq_1SEq_2;
+static float SEq_1SEq_3;
+static float SEq_1SEq_4;
+static float SEq_2SEq_3;
+static float SEq_2SEq_4;
+static float SEq_3SEq_4;
+static float twom_x;
+static float twom_y;
+static float twom_z;
+
+
 
 void MARG_reset()
 {
@@ -29,53 +72,31 @@ void MARG_tick(float w_x, float  w_y, float w_z,
                 float m_x, float m_y, float m_z,
 		float delta_t)
 {
-  // local system variables
-  float norm;                           // vector norm
-  float SEqDot_omega_1, SEqDot_omega_2,
-        SEqDot_omega_3, SEqDot_omega_4; // quaternion rate from gyroscopes elements
-  float f_1, f_2, f_3, f_4, f_5, f_6;   // objective function
-  float J_11or24, J_12or23, J_13or22, J_14or21,
-        J_32, J_33,
-        J_41, J_42, J_43, J_44,
-        J_51, J_52, J_53, J_54,
-        J_61, J_62, J_63, J_64;         // objective function Jacobian elements
-  float SEqHatDot_1, SEqHatDot_2,
-        SEqHatDot_3, SEqHatDot_4;       // estimated direction of the gyroscope error
-  float w_err_x, w_err_y, w_err_z;      // estimated direction of the gyroscope error (angular)
-  float h_x, h_y, h_z;                  // computed flux in the earth frame
+	halfSEq_1 = 0.5f * Q[0];
+	halfSEq_2 = 0.5f * Q[1];
+	halfSEq_3 = 0.5f * Q[2];
+	halfSEq_4 = 0.5f * Q[3];
+	twoSEq_1 = 2.0f * Q[0];
+	twoSEq_2 = 2.0f * Q[1];
+	twoSEq_3 = 2.0f * Q[2];
+	twoSEq_4 = 2.0f * Q[3];
+	twob_x = 2.0f * b_x;
+	twob_z = 2.0f * b_z;
+	twob_xSEq_1 = 2.0f * b_x * Q[0];
+	twob_xSEq_2 = 2.0f * b_x * Q[1];
+	twob_xSEq_3 = 2.0f * b_x * Q[2];
+	twob_xSEq_4 = 2.0f * b_x * Q[3];
+	twob_zSEq_1 = 2.0f * b_z * Q[0];
+	twob_zSEq_2 = 2.0f * b_z * Q[1];
+	twob_zSEq_3 = 2.0f * b_z * Q[2];
+	twob_zSEq_4 = 2.0f * b_z * Q[3];
+	SEq_1SEq_3 = Q[0] * Q[2];
+	SEq_2SEq_4 = Q[1] * Q[3];
+	twom_x = 2.0f * m_x;
+	twom_y = 2.0f * m_y;
+	twom_z = 2.0f * m_z;
 
-  float halfSEq_1 = 0.5f * Q[0];
-  float halfSEq_2 = 0.5f * Q[1];
-  float halfSEq_3 = 0.5f * Q[2];
-  float halfSEq_4 = 0.5f * Q[3];
-  float twoSEq_1 = 2.0f * Q[0];
-  float twoSEq_2 = 2.0f * Q[1];
-  float twoSEq_3 = 2.0f * Q[2];
-  float twoSEq_4 = 2.0f * Q[3];
-  float twob_x = 2.0f * b_x;
-  float twob_z = 2.0f * b_z;
-  float twob_xSEq_1 = 2.0f * b_x * Q[0];
-  float twob_xSEq_2 = 2.0f * b_x * Q[1];
-  float twob_xSEq_3 = 2.0f * b_x * Q[2];
-  float twob_xSEq_4 = 2.0f * b_x * Q[3];
-  float twob_zSEq_1 = 2.0f * b_z * Q[0];
-  float twob_zSEq_2 = 2.0f * b_z * Q[1];
-  float twob_zSEq_3 = 2.0f * b_z * Q[2];
-  float twob_zSEq_4 = 2.0f * b_z * Q[3];
-  float SEq_1SEq_2;
-  float SEq_1SEq_3 = Q[0] * Q[2];
-  float SEq_1SEq_4;
-  float SEq_2SEq_3;
-  float SEq_2SEq_4 = Q[1] * Q[3];
-  float SEq_3SEq_4;
-  float twom_x = 2.0f * m_x;
-  float twom_y = 2.0f * m_y;
-  float twom_z = 2.0f * m_z;
-
-  //w_x = w_y = w_z = 0;
-	w_x /= 16000;
-	w_y /= 16000;
-	w_z /= 16000;
+ // w_x = w_y = w_z = 0;
 
   // normalise the accelerometer measurement
   norm = sqrt(a_x * a_x + a_y * a_y + a_z * a_z);
@@ -115,17 +136,17 @@ void MARG_tick(float w_x, float  w_y, float w_z,
   J_64 = twob_xSEq_2;
 
   // compute the gradient (matrix multiplication)
-  SEqHatDot_1 = J_14or21 * f_2 - J_11or24 * f_1 - J_41 * f_4 - J_51 * f_5 + J_61 * f_6;
-  SEqHatDot_2 = J_12or23 * f_1 + J_13or22 * f_2 - J_32 * f_3 + J_42 * f_4 + J_52 * f_5 + J_62 * f_6;
-  SEqHatDot_3 = J_12or23 * f_2 - J_33 * f_3 - J_13or22 * f_1 - J_43 * f_4 + J_53 * f_5 + J_63 * f_6;
-  SEqHatDot_4 = J_14or21 * f_1 + J_11or24 * f_2 - J_44 * f_4 - J_54 * f_5 + J_64 * f_6;
+  SEqHatDot_1 = J_14or21 * f_2 - J_11or24 * f_1    - J_41 * f_4 - J_51 * f_5 + J_61 * f_6;
+  SEqHatDot_2 = J_12or23 * f_1 + J_13or22 * f_2 - J_32 * f_3    + J_42 * f_4 + J_52 * f_5 + J_62 * f_6;
+  SEqHatDot_3 = J_12or23 * f_2 - J_33 * f_3 - J_13or22 * f_1    - J_43 * f_4 + J_53 * f_5 + J_63 * f_6;
+  SEqHatDot_4 = J_14or21 * f_1 + J_11or24 * f_2    - J_44 * f_4 - J_54 * f_5 + J_64 * f_6;
 
   // normalise the gradient to estimate direction of the gyroscope error
   norm = sqrt(SEqHatDot_1 * SEqHatDot_1 + SEqHatDot_2 * SEqHatDot_2 + SEqHatDot_3 * SEqHatDot_3 + SEqHatDot_4 * SEqHatDot_4);
-  SEqHatDot_1 = SEqHatDot_1 / norm;
-  SEqHatDot_2 = SEqHatDot_2 / norm;
-  SEqHatDot_3 = SEqHatDot_3 / norm;
-  SEqHatDot_4 = SEqHatDot_4 / norm;
+  SEqHatDot_1 /= norm;
+  SEqHatDot_2 /= norm;
+  SEqHatDot_3 /= norm;
+  SEqHatDot_4 /= norm;
 
   // compute angular estimated direction of the gyroscope error
   w_err_x = twoSEq_1 * SEqHatDot_2 - twoSEq_2 * SEqHatDot_1 - twoSEq_3 * SEqHatDot_4 + twoSEq_4 * SEqHatDot_3;
@@ -159,6 +180,7 @@ void MARG_tick(float w_x, float  w_y, float w_z,
   Q[1] /= norm;
   Q[2] /= norm;
   Q[3] /= norm;
+
 
   // compute flux in the earth frame
   SEq_1SEq_2 = Q[0] * Q[1];     // recompute axulirary variables

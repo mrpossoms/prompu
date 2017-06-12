@@ -75,7 +75,7 @@ int main()
 	drv_LSM_init();
 	MARG_reset();
 
-	const float dt = 0.01f;
+	const float dt = 0.01;
 	uint32_t delay = SysCtlClockGet() * dt;
 
 	while(1)
@@ -86,14 +86,14 @@ int main()
 		drv_LSM_vec3(LSM_ACC_MAG, LSM_START_MAG, &MAG);
 		TEMP = drv_LSM_temp();
 
-
+		const float rot_scl = (245.f / 32768.f) * (3.14159f / 180.f);
+		const float acc_scl = 2.f / 32768.f;
 		MARG_tick(
-			ROT.x, ROT.y, ROT.z,
-			ACC.x, ACC.y, ACC.z,
+			ROT.x * rot_scl, ROT.y * rot_scl, ROT.z * rot_scl,
+			ACC.x * acc_scl, ACC.y * acc_scl, ACC.z * acc_scl,
 			MAG.x, MAG.y, MAG.z,
 			dt
 		);
-
 #if defined(DEBUG)
 		//print("Sec/tick : %f", dt);
 		print_serial();

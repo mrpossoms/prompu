@@ -98,9 +98,9 @@ void MARG_reset()
 	quat_ident(w_quat);
 }
 
-void MARG_tick(int w_x, int w_y, int w_z,
-               int a_x, int a_y, int a_z,
-               int m_x, int m_y, int m_z,
+void MARG_tick(float w_x, float w_y, float w_z,
+               float a_x, float a_y, float a_z,
+               float m_x, float m_y, float m_z,
                float delta_t)
 {
 	int m[] = { m_x, m_y, m_z }, a[] = { a_x, a_y, a_z };
@@ -123,10 +123,9 @@ void MARG_tick(int w_x, int w_y, int w_z,
 	// compute the derivative of orientation in respect to
 	// angular rate of change
 	//w_x = w_y = w_z = 0;
-	const float s = 16000.f;
-	float w[] = { w_x / s, w_y / s, w_z / s, 0.f };
+	float w[] = { w_x, w_y, w_z, 0.f };
 
-	//quat_mul(Q, Q, w);
+	quat_mul(Q, Q, w);
 
 	scl4(q_tmp, Q, 0.5);
 	quat_mul(d_q_est, q_tmp, w);
@@ -138,7 +137,7 @@ void MARG_tick(int w_x, int w_y, int w_z,
 	scl4(w_quat, w_quat, a_mag);
 
 	// combine both estimates lerped by a convergence value
-	const float conv = 1.0f; // Convergence rate, favors w_quat. But should be
+	const float conv = 0.0f; // Convergence rate, favors w_quat. But should be
 	                         // small enough to allow vec_quat to counter-act
 				 // the drift of the gyroscope
 	lerp4(Q, vec_quat, w_quat, conv);

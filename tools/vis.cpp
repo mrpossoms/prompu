@@ -67,7 +67,7 @@ int main(int argc, char* argv[])
 		char s_buf[256] = {};
 		ssize_t len = read(serial, s_buf, 256);
 		sscanf(s_buf, "%f %f %f %f\n", q.v, q.v + 1, q.v + 2, q.v + 3);
-		//quat_norm(q.v, q.v);
+		quat_norm(q.v, q.v);
 
 		getmaxyx(stdscr, info.height, info.width);
 		uint8_t buf[info.width * info.height * 3];

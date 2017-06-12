@@ -1,4 +1,5 @@
-SRC+= main.c i2c_util.c drv_LSM9DS0.c MARG.c
+SRC+= main.c i2c_util.c drv_LSM9DS0.c basic.naive.c
+#MARG.c
 
 include boards/TM4C123G/vars.mk
 #include boards/propeller.mk
